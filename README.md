@@ -1,5 +1,8 @@
 # Nick Cards
 
+**▶ Play it: <https://nirvair-sangha.github.io/nick-poker-bj/>** — open it in Safari on an iPhone
+and *Share → Add to Home Screen*.
+
 Offline-first PWA card trainer: **blackjack with a live basic-strategy coach**. No App Store, no
 Apple Developer account, no backend, no network calls at runtime. You install it from Safari with
 *Add to Home Screen* and it runs like a native app — including in airplane mode.
@@ -57,67 +60,41 @@ it writes the PNGs by hand). You only need this if you change the artwork.
 
 ## Getting it onto an iPhone
 
-### Where things stand right now
+**It's live:** <https://nirvair-sangha.github.io/nick-poker-bj/>
 
-This repo is **private on a free plan**, and GitHub Pages isn't available in that combination —
-the API answers `Your current plan does not support GitHub Pages for this repository.` So pick one
-of the four options below. Options C and D need nothing at all and work today.
+The repo is public and GitHub Pages is enabled with **Source: GitHub Actions**, so every push to
+`main` builds, tests and redeploys automatically. Nothing further to set up.
 
-The CI workflow builds and tests on every push regardless, and **detects whether Pages is
-enabled**: if it isn't, it skips the deploy step cleanly instead of failing the run. The moment
-Pages does become available (option A or B), the next push deploys on its own with no changes
-needed to the workflow.
+### Install it
 
-### Option A — make the repo public, then use GitHub Pages
-
-Pages is free on public repos. Two one-time steps:
-
-1. **Settings → General → Danger Zone → Change visibility → Public.**
-2. **Settings → Pages → Build and deployment → Source → GitHub Actions.**
-
-Push to `main` (or re-run the latest workflow) and it deploys itself.
-
-### Option B — keep it private, upgrade to GitHub Pro
-
-Pro (currently $4/month) enables Pages on private repos. Then just do step 2 above.
-
-> Note that a Pages site is served publicly either way — private-repo Pages keeps the *source*
-> private, not the site, unless you're on Enterprise with access control.
-
-### Option C — Netlify or Cloudflare Pages (free, keeps the repo private)
-
-Both have free tiers that build from a private repo. Connect the repo, then:
-
-- **Build command:** `npm run build`
-- **Publish directory:** `dist`
-
-Because they serve from the domain root, change `base` in `vite.config.ts` from
-`'/nick-poker-bj/'` to `'/'` first — otherwise every asset 404s.
-
-### Option D — same Wi-Fi, no deploy at all
-
-Nothing to sign up for, and it's the fastest way to get it on the phone today:
-
-```bash
-npm run build
-npm run preview -- --host
-```
-
-Vite prints a `Network:` URL like `http://10.0.0.130:4173/nick-poker-bj/`. Open that in Safari on
-the phone while it's on the same Wi-Fi.
-
-The catch: that URL is plain HTTP on a LAN address, and **iOS only registers service workers over
-HTTPS or on `localhost`**. So it'll install to the home screen and play fine, but it won't be
-genuinely offline until it's served over HTTPS — which options A–C all give you.
-
-### Installing it, once it's reachable
-
-1. Open the URL in **Safari** — it must be Safari, Chrome on iOS can't install PWAs.
+1. Open <https://nirvair-sangha.github.io/nick-poker-bj/> in **Safari** on the iPhone — it must be
+   Safari, Chrome on iOS can't install PWAs.
 2. Tap the **Share** button (the square with the arrow).
 3. Scroll down, tap **Add to Home Screen**, then **Add**.
 4. Launch it from the home screen. It opens full-screen with no browser chrome.
-5. Load it once while online so the service worker precaches everything. After that it works with
-   no signal at all.
+5. That first load precaches everything. After that it works with no signal at all — airplane mode,
+   the Tube, a basement, wherever.
+
+To update it later, just open it once with signal; the service worker picks up the new build and
+swaps it in on the next launch.
+
+### If you ever want to move it
+
+The deploy job checks whether Pages is enabled and **skips cleanly rather than failing** if it
+isn't — so the workflow keeps working if the repo goes private again (though Pages itself would
+then need a paid plan).
+
+- **Netlify / Cloudflare Pages** — free tiers, and they'll build from a private repo. Build command
+  `npm run build`, publish directory `dist`. Change `base` in `vite.config.ts` from
+  `'/nick-poker-bj/'` to `'/'` first, since they serve from the domain root — otherwise every asset
+  404s.
+- **Same Wi-Fi, no deploy** — `npm run build && npm run preview -- --host`, then open the printed
+  `Network:` URL from the phone. Useful for testing a change before pushing, but note that **iOS
+  only registers service workers over HTTPS or on `localhost`**, so a plain-HTTP LAN address will
+  install and play but won't precache — it isn't genuinely offline.
+
+> A Pages site is served publicly regardless of repo visibility; private-repo Pages keeps the
+> *source* private, not the site, unless you're on Enterprise with access control.
 
 ---
 
