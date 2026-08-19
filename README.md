@@ -57,33 +57,46 @@ it writes the PNGs by hand). You only need this if you change the artwork.
 
 ## Getting it onto an iPhone
 
-### Option A — GitHub Pages (recommended)
+### Where things stand right now
 
-A workflow at `.github/workflows/deploy.yml` builds and deploys on every push to `main`.
+This repo is **private on a free plan**, and GitHub Pages isn't available in that combination —
+the API answers `Your current plan does not support GitHub Pages for this repository.` So pick one
+of the four options below. Options C and D need nothing at all and work today.
 
-**One-time setup by the repo owner:** go to **Settings → Pages → Build and deployment → Source**
-and select **GitHub Actions**. The first workflow run will fail to deploy until you do this.
+The CI workflow builds and tests on every push regardless, and **detects whether Pages is
+enabled**: if it isn't, it skips the deploy step cleanly instead of failing the run. The moment
+Pages does become available (option A or B), the next push deploys on its own with no changes
+needed to the workflow.
 
-Then on the iPhone:
+### Option A — make the repo public, then use GitHub Pages
 
-1. Open `https://<owner>.github.io/nick-poker-bj/` in **Safari** (it must be Safari — Chrome on iOS
-   can't install PWAs).
-2. Tap the **Share** button (the square with the arrow).
-3. Scroll down and tap **Add to Home Screen**, then **Add**.
-4. Launch it from the home screen. It opens full-screen with no browser chrome.
-5. Load it once while online so the service worker precaches everything. After that it works with
-   no signal at all.
+Pages is free on public repos. Two one-time steps:
 
-> **Private repos:** GitHub Pages on a private repo requires a paid plan (Pro/Team/Enterprise). If
-> Pages isn't available to you, use one of the fallbacks below.
+1. **Settings → General → Danger Zone → Change visibility → Public.**
+2. **Settings → Pages → Build and deployment → Source → GitHub Actions.**
 
-### Option B — Netlify / Cloudflare Pages
+Push to `main` (or re-run the latest workflow) and it deploys itself.
 
-Both have free tiers that serve private-repo builds. Build command `npm run build`, publish
-directory `dist`. Either change `base` in `vite.config.ts` to `'/'` (if you deploy at the domain
-root) or keep the subpath and serve it under `/nick-poker-bj/`.
+### Option B — keep it private, upgrade to GitHub Pro
 
-### Option C — Same Wi-Fi, no deploy at all
+Pro (currently $4/month) enables Pages on private repos. Then just do step 2 above.
+
+> Note that a Pages site is served publicly either way — private-repo Pages keeps the *source*
+> private, not the site, unless you're on Enterprise with access control.
+
+### Option C — Netlify or Cloudflare Pages (free, keeps the repo private)
+
+Both have free tiers that build from a private repo. Connect the repo, then:
+
+- **Build command:** `npm run build`
+- **Publish directory:** `dist`
+
+Because they serve from the domain root, change `base` in `vite.config.ts` from
+`'/nick-poker-bj/'` to `'/'` first — otherwise every asset 404s.
+
+### Option D — same Wi-Fi, no deploy at all
+
+Nothing to sign up for, and it's the fastest way to get it on the phone today:
 
 ```bash
 npm run build
@@ -91,8 +104,20 @@ npm run preview -- --host
 ```
 
 Vite prints a `Network:` URL like `http://10.0.0.130:4173/nick-poker-bj/`. Open that in Safari on
-the phone while it's on the same Wi-Fi, then Add to Home Screen as above. (`npm run dev -- --host`
-also works for a quick look, but without the service worker it won't be genuinely offline.)
+the phone while it's on the same Wi-Fi.
+
+The catch: that URL is plain HTTP on a LAN address, and **iOS only registers service workers over
+HTTPS or on `localhost`**. So it'll install to the home screen and play fine, but it won't be
+genuinely offline until it's served over HTTPS — which options A–C all give you.
+
+### Installing it, once it's reachable
+
+1. Open the URL in **Safari** — it must be Safari, Chrome on iOS can't install PWAs.
+2. Tap the **Share** button (the square with the arrow).
+3. Scroll down, tap **Add to Home Screen**, then **Add**.
+4. Launch it from the home screen. It opens full-screen with no browser chrome.
+5. Load it once while online so the service worker precaches everything. After that it works with
+   no signal at all.
 
 ---
 

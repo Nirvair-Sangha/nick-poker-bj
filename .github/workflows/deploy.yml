@@ -1,7 +1,9 @@
-name: Deploy to GitHub Pages
+name: CI & Deploy
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
   workflow_dispatch:
 
@@ -10,7 +12,6 @@ permissions:
   pages: write
   id-token: write
 
-# One deployment at a time; don't cancel a run that's mid-publish.
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -23,7 +24,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - run: npm ci
@@ -32,7 +33,17 @@ jobs:
 
       - run: npm run build
 
-      - uses: actions/configure-pages@v5
+      # `base` is hardcoded to /nick-poker-bj/ in vite.config.ts, so we don't need
+      # actions/configure-pages to derive it — which also means the build stays green
+      # on a repo where Pages isn't enabled.
+      - name: Check the build really produced a service worker and manifest
+        run: |
+          test -f dist/sw.js
+          test -f dist/manifest.webmanifest
+          test -f dist/icons/icon-192.png
+          test -f dist/icons/icon-512.png
+          test -f dist/icons/icon-maskable-512.png
+          echo "PWA output looks good."
 
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -40,10 +51,37 @@ jobs:
 
   deploy:
     needs: build
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # GitHub Pages isn't available on a private repo on the free plan, and it has to
+      # be switched on manually even when it is available. Rather than failing every
+      # push, detect it and skip cleanly — the moment Pages becomes available this
+      # starts deploying on its own with no changes needed here.
+      - name: Is Pages enabled?
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/${{ github.repository }}/pages" >/dev/null 2>&1; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### Pages deploy skipped"
+              echo
+              echo "GitHub Pages isn't enabled for this repository, so there was nothing to deploy to."
+              echo "The build itself succeeded and \`dist/\` is attached to this run as an artifact."
+              echo
+              echo "To turn deployment on: **Settings → Pages → Build and deployment → Source → GitHub Actions**."
+              echo "A private repo needs a paid plan; otherwise make the repo public, or use the"
+              echo "Netlify / Cloudflare Pages / local-preview fallbacks documented in the README."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - id: deployment
+        if: steps.check.outputs.enabled == 'true'
         uses: actions/deploy-pages@v4
